@@ -1,4 +1,4 @@
-ting_ezproxy
+Ting Ezproxy Authentication
 ============
 
 Modulet benyttes til at validere låneren i forbindelse med ezproxy.
@@ -21,5 +21,5 @@ Expired; Deny expired.htm
 /Ticket
 ```
 
-Værdien af CITIZENUSERGROUP og SECRET benyttes i nærværende administration
+Værdien af CITIZENUSERGROUP og SECRET vælges med omhu på ezproxy-serveren og indtastes i nærværende administration
 
