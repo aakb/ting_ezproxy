@@ -1,0 +1,149 @@
+<?php
+// $Id: ting_ezproxy.module $
+
+define('EZPROXY_AUTHENTICATION_URL', 'ezproxy_authentication');
+
+/**
+ * Implementation of hook_menu
+ */
+function ting_ezproxy_menu(){
+  $items = array();
+  $items['admin/settings/ting/ezproxy'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => 'Ezproxy settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ting_ezproxy_settings_form'),
+    'file' => 'ting_ezproxy.admin.inc',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+    'weight' => 10,
+  );
+
+  $items[EZPROXY_AUTHENTICATION_URL] = array(
+    'title' => 'Ezproxy handler',
+    'page callback' => 'ting_ezproxy_handler',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+/**
+ * 
+ */
+function ting_ezproxy_handler() {
+
+  // get url from ezproxy
+  $url = $_GET['url'];
+
+  // we need a non-critical id on the user - actually uid can't be used - it's not anonomous for public use
+  global $user;
+  $userid=$user->uid;
+  
+  // get config values
+  $configvalues = variable_get('ting_ezproxy', array());
+
+  if ( ! $user->uid ) {
+    // anonymous
+    $text = strtr( $configvalues['text_anonymous'], array('@loginurl' => '/user/login?destination=' . EZPROXY_AUTHENTICATION_URL . '?url=' . $url,
+	'@loginform' => drupal_get_form('user_login') ));
+
+  } else {
+    // now we are logged ind
+
+    $status=GetUserCurrentStatus( $configvalues['category'], $configvalues['block'] );
+
+    if ( is_null($status) ) {
+      // blocked or other error
+      $text = $configvalues['text_error'];
+
+    } else if ( $status ) {
+      // all okay - construct ticket
+
+      $ezproxy  = new EZproxyTicket( $configvalues['domain'], $configvalues['secret'], $userid, $configvalues['citizen']);
+      $text = strtr( $configvalues['text_loggedin'], array('@tokenurl' => $ezproxy->url($url) ));
+      drupal_set_html_head('<meta http-equiv="refresh" content="10;url=' . $ezproxy->url($url) . '">');
+
+    } else {
+      // wrong category
+      $text = $configvalues['text_wrongcategory'];
+    }
+  }
+  return $text;
+}
+
+/**
+ * 
+ */
+function GetUserCurrentStatus ( $category, $block ) {
+
+    global $user;
+    if ( ! $user->uid ) {
+      return null;
+    }
+
+    $account = $GLOBALS['user'];
+    $creds = ding_library_user_get_credentials($account);
+
+    if ($creds != DING_PROVIDER_AUTH_REQUIRED) {
+       // This need a update to AlmaClient.class.php with this line 'category' =>  $info->getAttribute('patronCategory'), )
+       $userdata = alma_client_invoke('get_patron_info', $creds['user_id'], $creds['password'], TRUE);
+    }
+
+    // if no data? - then return null
+    if ( !isset( $userdata["category"]) ) {
+      return null;
+    }
+
+    // have the user some blocks then vi return null if this 
+    if ( isset($userdata["blocks"]) && ! empty($block) ) {
+      $blocklist = explode(',', $block); 
+      $regexp = '/(' . implode ( '|', preg_grep('/^\w+$/', $blocklist) ) . ')/';
+      foreach ( $userdata["blocks"] as $ele ) {
+         if ( ! $ele['is_system'] && preg_match ( $regexp , $ele['code'] ) ) {
+            return null;
+         }
+      }
+    }
+
+    // make the regexp with allowed categories and check this
+    $catlist = explode(',', $category);
+    $regexp = '/(' . implode ( '|', preg_grep('/^\w+$/', $catlist) ) . ')/';
+
+    return preg_match ( $regexp , $userdata["category"] );
+
+}
+/**
+ * From http://www.oclc.org/support/documentation/ezproxy/usr/ticket/php.htm
+ *
+ */
+
+class EZproxyTicket {
+  var $EZproxyStartingPointURL;
+
+  function EZproxyTicket(
+    $EZproxyServerURL,
+    $secret,
+    $user,
+    $groups = "")
+  {
+    if (strcmp($secret, "") == 0) {
+      echo("EZproxyURLInit secret cannot be blank");
+      exit(1);
+    }
+
+    $packet = '$u' . time();
+    if (strcmp($groups, "") != 0) {
+      $packet .=  '$g' . $groups;
+    }
+    $packet .= '$e';
+    $EZproxyTicket = urlencode(md5($secret . $user . $packet) . $packet);
+    $this->EZproxyStartingPointURL = $EZproxyServerURL . "/login?user=" .
+      urlencode($user) . "&ticket=" . $EZproxyTicket;
+  }
+
+  function url($url)
+  {
+    return $this->EZproxyStartingPointURL . "&url=" . $url;
+  }
+}
