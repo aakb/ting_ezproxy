@@ -4,7 +4,7 @@ ting_ezproxy
 Modulet benyttes til at validere låneren i forbindelse med ezproxy.
 
 Låneren godkendes på basis af relevante lånerkategorier og evt. blokeringskoder.
-Modulet kræver patch til AlmaClient.class.php så lånerkategorier kan håndteres.
+Modulet kræver [patch til AlmaClient.class.php](https://github.com/bombycilla/alma/commit/83d96e26f8795d0ad676d08179a180263d6fc4fe) så lånerkategorier kan håndteres.
 
 Ezproxy skal sættes op som beskrevet på CGI Authentication, http://www.oclc.org/support/documentation/ezproxy/usr/cgi.htm
 dog med den begrænsning at urlen skal encodes via "^R"
