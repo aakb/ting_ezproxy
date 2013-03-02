@@ -13,7 +13,7 @@ Brugeren logger ind, det valideres om man er bosat i kommunen og kontrollen give
 Valideringen sker på basis af lånerkategorier og evt. blokeringskoder der afleveres af Alma.
 Modulet kræver [patch til AlmaClient.class.php](https://github.com/bombycilla/alma/commit/83d96e26f8795d0ad676d08179a180263d6fc4fe) så lånerkategorier kan håndteres.
 
-Der er 4 "skærmbilleder" som skal tilrettes:
+Der er 4 "skærmbilleder" som skal configureres:
 
 1) hvor loginformen indsættes. Her bør betingelser o.lign. præsenteres. Man logger ind og sendes til 2). Bemærk at 1) kun vises hvis man ikke er logget ind på ting-sitet.
 
@@ -24,9 +24,8 @@ Der er 4 "skærmbilleder" som skal tilrettes:
 4) vises hvis man er blokeret, er redaktør eller der i øvrigt er fejl i forbindelse med login.
 
 Linket på 2) er oprettet via Ezproxys Ticket-metode og kræver mindst Ezproxy version XX.
-Opsætning er beskrevet på http://www.oclc.org/support/documentation/ezproxy/usr/cgi.htm.
+Opsætning er beskrevet på http://www.oclc.org/support/documentation/ezproxy/usr/cgi.htm
 Bemærk at urlen skal encodes via "^R" - ellers risikerer man at drupal får encodet/decodet de forkerte dele af urlen.
-
 
 Opsætning af Ezproxy kræver følgende i user.txt
 
@@ -41,7 +40,9 @@ Expired; Deny expired.htm
 ```
 
 Værdien af CITIZENUSERGROUP skal svare til indstillingerne i modulet her og i config.txt. Kan udelades men dette er ikke testet.
+
 En SECRET af passende længde vælges med omhu og indtastes i administrationen.
+
 Lokalt på ezproxy-serveren findes en default udgave af expired.htm som kan tilrettes hvis ønskeligt.
 Urlen fra 2) har en tidsbegrænsning bestemt af TimeValid (her 10 minutter).
 
