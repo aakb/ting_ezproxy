@@ -53,7 +53,7 @@ function ting_ezproxy_handler() {
     // User is now logged in.
     $status = get_user_current_status($config_values['category'], $config_values['block']);
 
-    if (is_null($status)) {
+    if ($status === FALSE) {
       // Blocked or other error.
       $text = $config_values['text_error'];
     }
@@ -90,13 +90,16 @@ function ting_ezproxy_handler() {
 }
 
 /**
- * @todo: Missing description ?
+ * Get the state of the user - 3 different returnvalues:
+ * 1: user have the correct category 
+ * 0: user have a wrong category
+ * null: some other error eg. blocked card, no connection to ding_provider
  */
 function get_user_current_status($category, $block) {
   global $user;
 
   if (user_is_anonymous()) {
-    return null;
+    return FALSE;
   }
 
   $creds = ding_library_user_get_credentials($user);
@@ -109,9 +112,9 @@ function get_user_current_status($category, $block) {
     $user_data = alma_client_invoke('get_patron_info', $creds['user_id'], $creds['password'], TRUE);
   }
 
-  // If no data? - then return null,
+  // If no data? - then return FALSE,
   if (!isset( $user_data["category"])) {
-    return null;
+    return FALSE;
   }
 
   // Have the user some blocks then vi return FALSE if this... ?
@@ -120,7 +123,7 @@ function get_user_current_status($category, $block) {
     $regexp = '/(' . implode('|', preg_grep('/^\w+$/', $block_list)) . ')/';
     foreach ($user_data["blocks"] as $ele) {
       if (!$ele['is_system'] && preg_match($regexp , $ele['code'])) {
-        return null;
+        return FALSE;
       }
     }
   }
