@@ -65,7 +65,7 @@ function ting_ezproxy_settings_form(){
     '#default_value' =>  isset($default['text_anonymous']) ? $default['text_anonymous'] : '',
     '#cols' => 60,
     '#rows' => 5,
-    '#description' => t('This are shown with link to loginform - use @loginurl for that'),
+    '#description' => t('This are shown with loginform - use @loginform for that'),
   );
 
   $form['ting_ezproxy']['text_loggedin'] = array(
@@ -75,6 +75,13 @@ function ting_ezproxy_settings_form(){
     '#cols' => 60,
     '#rows' => 5,
     '#description' => t('This are the last text shown with tokenurl - use @tokenurl for that'),
+  );
+
+  $form['ting_ezproxy']['loggedin_time'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Time to show loggedin-page'),
+    '#description' => t('Integer: wait n secounds before automatic redirect. Use 0 to redirect immediately and -1 to disable'),
+    '#default_value' => isset($default['loggedin_time']) ? $default['loggedin_time'] : '10',
   );
 
   $form['ting_ezproxy']['text_wrongcategory'] = array(

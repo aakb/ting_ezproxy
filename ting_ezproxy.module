@@ -41,35 +41,21 @@ function ting_ezproxy_menu(){
  */
 function ting_ezproxy_handler() {
 
-  // Get url from ezproxy.
+  // Get url from ezproxy
+  // The content will be encoded in The Ezproxy-way eg. "ezp.2aH...s-"
   $url = $_GET['url'];
 
-  /**
-   * @todo: Validate users input (url) is a url, valid_url($url) function maybe
-   *        useful.
-   */
-
-  // We need a non-critical id on the user - actually uid can't be used - it's
-  // not anonomous for public use.
   global $user;
 
   // Get config values.
   $config_values = variable_get('ting_ezproxy', array());
 
   if (user_is_anonymous()) {
-    /**
-     * @todo: Could drupal_set_message('you need to login to acccess...') with
-     * drupal_goto('/user/login', array('destination' => EZPROXY_AUTHENTICATION_URL . '?url=' . $url));
-     *
-     * Might not work to the extra query string ?url ?.
-     */
-    $text = strtr($config_values['text_anonymous'], array(
-      '@loginurl' => '/user/login?destination=' . EZPROXY_AUTHENTICATION_URL . '?url=' . $url,
-      '@loginform' => drupal_get_form('user_login')
-    ));
+    // Get text and replace token
+    $text = strtr($config_values['text_anonymous'], array('@loginform' => drupal_get_form('user_login')));
   }
   else {
-    // User is now we are logged ind.
+    // User is now logged in.
     $status = get_user_current_status($config_values['category'], $config_values['block']);
 
     if ($status) {
@@ -79,13 +65,22 @@ function ting_ezproxy_handler() {
     else if ( $status ) {
       // all okay - construct ticket
 
-      $ezproxy  = new EZproxyTicket($config_values['domain'], $config_values['secret'], $user->uid, $config_values['citizen']);
-      $text = strtr( $config_values['text_loggedin'], array('@tokenurl' => $ezproxy->url($url) ));
-      drupal_set_html_head('<meta http-equiv="refresh" content="10;url=' . $ezproxy->url($url) . '">');
+      // We should use a non-critical id on the user to the ezproxylog
+      // @todo: do a MD5 hash on uid with some random number and save the connection uid/ezproxy_userid in watchdog
+      $ezproxy_userid = $user->uid;
 
-      /**
-       * @todo: Chould drupal_goto() be used ? What does the 10; in content do ?
-       */
+      // Make the ezproxy url with ticket
+      $url_redirect  = make_ezproxy_url($config_values['domain'], $config_values['secret'], $ezproxy_userid, $config_values['citizen'], $url);
+
+      $text = strtr( $config_values['text_loggedin'], array('@tokenurl' => $url_redirect ));
+
+      $waittime = intval($config_values['loggedin_time']);
+      if ( $waittime > 0 ) {
+        drupal_set_html_head('<meta http-equiv="refresh" content="'. $waittime . ';url=' . $url_redirect . '">');
+      }
+      else if ( $waittime == 0 ) {
+        drupal_goto($url_redirect);
+      }
     }
     else {
       // wrong category
@@ -138,6 +133,21 @@ function get_user_current_status($category, $block) {
   return preg_match ($regexp , $user_data["category"]);
 }
 
+/**
+ * Make the Ezproxy-ticket
+ *
+ * From the documentation for Ezproxy
+ * http://www.oclc.org/support/documentation/ezproxy/usr/ticket/php.htm
+ */
+function make_ezproxy_url($EZproxyServerURL, $secret, $user, $groups = "", $url) {
+    $packet = '$u' . time();
+    if (strcmp($groups, "") != 0) {
+      $packet .=  '$g' . $groups;
+    }
+    $packet .= '$e';
+    $EZproxyTicket = urlencode(md5($secret . $user . $packet) . $packet);
+    return $EZproxyServerURL . "/login?user=" . urlencode($user) . "&ticket=" . $EZproxyTicket . "&url=" . $url;
+}
 
 /**
  * @todo: Missing description.
