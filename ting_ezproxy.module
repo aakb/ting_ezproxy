@@ -2,7 +2,10 @@
 /**
  * @file
  *
- * @todo: Write description of file... what do it do.
+ * This module handles the authentication of user when required by Ezproxy.
+ *
+ * When user are correctly authenticated the control are returned to Ezproxy
+ * with construct of a Ticket-url.
  */
 
 define('EZPROXY_AUTHENTICATION_URL', 'ezproxy_authentication');
@@ -37,7 +40,7 @@ function ting_ezproxy_menu(){
 }
 
 /**
- * @todo: Missing description!.
+ * Handle the authentication of the user
  */
 function ting_ezproxy_handler() {
   global $user;
@@ -57,9 +60,9 @@ function ting_ezproxy_handler() {
       // all okay - construct ticket
 
       // Get url from ezproxy
-      // The content will be encoded in The Ezproxy-way eg. "ezp.2aH...s-"
+      // The content will be encoded in The Ezproxy-way eg. "ezp.2aH...s-" - it's not a real url in this context.
       $url = $_GET['url'];
-  
+
       // We should use a non-critical id on the user to the ezproxylog
       // @todo: do a MD5 hash on uid with some random number and save the connection uid/ezproxy_userid in watchdog
       $ezproxy_userid = $user->uid;
@@ -67,14 +70,17 @@ function ting_ezproxy_handler() {
       // Make the ezproxy url with ticket
       $url_redirect  = make_ezproxy_url($config_values['domain'], $config_values['secret'], $ezproxy_userid, $config_values['citizen'], $url);
 
-      $text = strtr( $config_values['text_loggedin'], array('@tokenurl' => $url_redirect ));
-
       $waittime = intval($config_values['loggedin_time']);
-      if ( $waittime > 0 ) {
-        drupal_set_html_head('<meta http-equiv="refresh" content="'. $waittime . ';url=' . $url_redirect . '">');
-      }
-      else if ( $waittime == 0 ) {
+      if (  $waittime == 0 ) {
         drupal_goto($url_redirect);
+      }
+      else {
+        // Get text and replace token with url
+        $text = strtr( $config_values['text_loggedin'], array('@tokenurl' => $url_redirect ));
+
+        if ( $waittime > 0 ) {
+          drupal_set_html_head('<meta http-equiv="refresh" content="'. $waittime . ';url=' . $url_redirect . '">');
+        }
       }
     }
     else if ($status === FALSE) {
@@ -90,21 +96,18 @@ function ting_ezproxy_handler() {
 }
 
 /**
- * Get the state of the user - 3 different returnvalues:
- * 1: user have the correct category 
- * 0: user have a wrong category
- * FALSE: some other error eg. blocked card, no connection to ding_provider, user is not alma_user
+ * Get the state of the user
+ *
+ * @return
+ *   1: user have the correct category
+ *   0: user have a wrong category
+ *   FALSE: some other error eg. blocked card, no connection to ding_provider, user is not alma_user
  */
 function get_user_current_status($category, $block) {
   global $user;
 
   $creds = ding_library_user_get_credentials($user);
   if ($creds != DING_PROVIDER_AUTH_REQUIRED) {
-    // This need a update to AlmaClient.class.php with this line
-    // 'category' =>  $info->getAttribute('patronCategory'),
-    /**
-    * @todo: Create pull request til alma module.
-    */
     $user_data = alma_client_invoke('get_patron_info', $creds['user_id'], $creds['password'], TRUE);
   }
 
@@ -114,7 +117,7 @@ function get_user_current_status($category, $block) {
   }
 
   // Have the user some blocks then vi return FALSE if this... ?
-  if ( isset($user_data["blocks"]) && ! empty($block) ) {
+  if ( isset($user_data["blocks"]) && strlen($block) ) {
     $block_list = explode(',', $block);
     $regexp = '/(' . implode('|', preg_grep('/^\w+$/', $block_list)) . ')/';
     foreach ($user_data["blocks"] as $ele) {
