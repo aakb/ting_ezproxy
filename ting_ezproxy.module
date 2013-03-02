@@ -96,7 +96,7 @@ function get_user_current_status($category, $block) {
   global $user;
 
   if (user_is_anonymous()) {
-    return FALSE;
+    return null;
   }
 
   $creds = ding_library_user_get_credentials($user);
@@ -111,7 +111,7 @@ function get_user_current_status($category, $block) {
 
   // If no data? - then return null,
   if (!isset( $user_data["category"])) {
-    return FALSE;
+    return null;
   }
 
   // Have the user some blocks then vi return FALSE if this... ?
@@ -120,7 +120,7 @@ function get_user_current_status($category, $block) {
     $regexp = '/(' . implode('|', preg_grep('/^\w+$/', $block_list)) . ')/';
     foreach ($user_data["blocks"] as $ele) {
       if (!$ele['is_system'] && preg_match($regexp , $ele['code'])) {
-        return FALSE;
+        return null;
       }
     }
   }
