@@ -53,11 +53,7 @@ function ting_ezproxy_handler() {
     // User is now logged in.
     $status = get_user_current_status($config_values['category'], $config_values['block']);
 
-    if ($status === FALSE) {
-      // Blocked or other error.
-      $text = $config_values['text_error'];
-    }
-    else if ($status) {
+    if ($status) {
       // all okay - construct ticket
 
       // Get url from ezproxy
@@ -81,8 +77,12 @@ function ting_ezproxy_handler() {
         drupal_goto($url_redirect);
       }
     }
+    else if ($status === FALSE) {
+      // Blocked or other error.
+      $text = $config_values['text_error'];
+    }
     else {
-      // wrong category
+      // Wrong category
       $text = $config_values['text_wrongcategory'];
     }
   }
@@ -93,14 +93,10 @@ function ting_ezproxy_handler() {
  * Get the state of the user - 3 different returnvalues:
  * 1: user have the correct category 
  * 0: user have a wrong category
- * null: some other error eg. blocked card, no connection to ding_provider
+ * FALSE: some other error eg. blocked card, no connection to ding_provider, user is not alma_user
  */
 function get_user_current_status($category, $block) {
   global $user;
-
-  if (user_is_anonymous()) {
-    return FALSE;
-  }
 
   $creds = ding_library_user_get_credentials($user);
   if ($creds != DING_PROVIDER_AUTH_REQUIRED) {
@@ -142,11 +138,11 @@ function get_user_current_status($category, $block) {
  * http://www.oclc.org/support/documentation/ezproxy/usr/ticket/php.htm
  */
 function make_ezproxy_url($EZproxyServerURL, $secret, $user, $groups = "", $url) {
-    $packet = '$u' . time();
-    if (strcmp($groups, "") != 0) {
-      $packet .=  '$g' . $groups;
-    }
-    $packet .= '$e';
-    $EZproxyTicket = urlencode(md5($secret . $user . $packet) . $packet);
-    return $EZproxyServerURL . "/login?user=" . urlencode($user) . "&ticket=" . $EZproxyTicket . "&qurl=" . urlencode($url);
+  $packet = '$u' . time();
+  if (strcmp($groups, "") != 0) {
+    $packet .=  '$g' . $groups;
+  }
+  $packet .= '$e';
+  $EZproxyTicket = urlencode(md5($secret . $user . $packet) . $packet);
+  return $EZproxyServerURL . "/login?user=" . urlencode($user) . "&ticket=" . $EZproxyTicket . "&qurl=" . urlencode($url);
 }
