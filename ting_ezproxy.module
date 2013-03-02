@@ -58,11 +58,11 @@ function ting_ezproxy_handler() {
     // User is now logged in.
     $status = get_user_current_status($config_values['category'], $config_values['block']);
 
-    if ($status) {
+    if (is_null($status)) {
       // Blocked or other error.
       $text = $config_values['text_error'];
     }
-    else if ( $status ) {
+    else if ($status) {
       // all okay - construct ticket
 
       // We should use a non-critical id on the user to the ezproxylog
