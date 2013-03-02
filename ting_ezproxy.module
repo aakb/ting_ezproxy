@@ -1,5 +1,9 @@
 <?php
-// $Id: ting_ezproxy.module $
+/**
+ * @file
+ *
+ * @todo: Write description of file... what do it do.
+ */
 
 define('EZPROXY_AUTHENTICATION_URL', 'ezproxy_authentication');
 
@@ -8,19 +12,22 @@ define('EZPROXY_AUTHENTICATION_URL', 'ezproxy_authentication');
  */
 function ting_ezproxy_menu(){
   $items = array();
+
   $items['admin/settings/ting/ezproxy'] = array(
-    'type' => MENU_NORMAL_ITEM,
     'title' => 'Ezproxy settings',
+    'description' => 'Configure EZProxy authenticaton',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ting_ezproxy_settings_form'),
     'file' => 'ting_ezproxy.admin.inc',
     'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
     'weight' => 10,
   );
 
   $items[EZPROXY_AUTHENTICATION_URL] = array(
-    'title' => 'Ezproxy handler',
+    'title' => 'Ezproxy callback',
+    'description' => 'EZProxy menu callback to handle authentication',
     'page callback' => 'ting_ezproxy_handler',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
@@ -28,108 +35,130 @@ function ting_ezproxy_menu(){
 
   return $items;
 }
+
 /**
- * 
+ * @todo: Missing description!.
  */
 function ting_ezproxy_handler() {
 
-  // get url from ezproxy
+  // Get url from ezproxy.
   $url = $_GET['url'];
 
-  // we need a non-critical id on the user - actually uid can't be used - it's not anonomous for public use
+  /**
+   * @todo: Validate users input (url) is a url, valid_url($url) function maybe
+   *        useful.
+   */
+
+  // We need a non-critical id on the user - actually uid can't be used - it's
+  // not anonomous for public use.
   global $user;
-  $userid=$user->uid;
-  
-  // get config values
-  $configvalues = variable_get('ting_ezproxy', array());
 
-  if ( ! $user->uid ) {
-    // anonymous
-    $text = strtr( $configvalues['text_anonymous'], array('@loginurl' => '/user/login?destination=' . EZPROXY_AUTHENTICATION_URL . '?url=' . $url,
-	'@loginform' => drupal_get_form('user_login') ));
+  // Get config values.
+  $config_values = variable_get('ting_ezproxy', array());
 
-  } else {
-    // now we are logged ind
+  if (user_is_anonymous()) {
+    /**
+     * @todo: Could drupal_set_message('you need to login to acccess...') with
+     * drupal_goto('/user/login', array('destination' => EZPROXY_AUTHENTICATION_URL . '?url=' . $url));
+     *
+     * Might not work to the extra query string ?url ?.
+     */
+    $text = strtr($config_values['text_anonymous'], array(
+      '@loginurl' => '/user/login?destination=' . EZPROXY_AUTHENTICATION_URL . '?url=' . $url,
+      '@loginform' => drupal_get_form('user_login')
+    ));
+  }
+  else {
+    // User is now we are logged ind.
+    $status = get_user_current_status($config_values['category'], $config_values['block']);
 
-    $status=GetUserCurrentStatus( $configvalues['category'], $configvalues['block'] );
-
-    if ( is_null($status) ) {
-      // blocked or other error
-      $text = $configvalues['text_error'];
-
-    } else if ( $status ) {
+    if ($status) {
+      // Blocked or other error.
+      $text = $config_values['text_error'];
+    }
+    else if ( $status ) {
       // all okay - construct ticket
 
-      $ezproxy  = new EZproxyTicket( $configvalues['domain'], $configvalues['secret'], $userid, $configvalues['citizen']);
-      $text = strtr( $configvalues['text_loggedin'], array('@tokenurl' => $ezproxy->url($url) ));
+      $ezproxy  = new EZproxyTicket($config_values['domain'], $config_values['secret'], $user->uid, $config_values['citizen']);
+      $text = strtr( $config_values['text_loggedin'], array('@tokenurl' => $ezproxy->url($url) ));
       drupal_set_html_head('<meta http-equiv="refresh" content="10;url=' . $ezproxy->url($url) . '">');
 
-    } else {
+      /**
+       * @todo: Chould drupal_goto() be used ? What does the 10; in content do ?
+       */
+    }
+    else {
       // wrong category
-      $text = $configvalues['text_wrongcategory'];
+      $text = $config_values['text_wrongcategory'];
     }
   }
   return $text;
 }
 
 /**
- * 
+ * @todo: Missing description ?
  */
-function GetUserCurrentStatus ( $category, $block ) {
+function get_user_current_status($category, $block) {
+  global $user;
 
-    global $user;
-    if ( ! $user->uid ) {
-      return null;
-    }
+  if (user_is_anonymous()) {
+    return FALSE;
+  }
 
-    $account = $GLOBALS['user'];
-    $creds = ding_library_user_get_credentials($account);
+  $creds = ding_library_user_get_credentials($user);
+  if ($creds != DING_PROVIDER_AUTH_REQUIRED) {
+    // This need a update to AlmaClient.class.php with this line
+    // 'category' =>  $info->getAttribute('patronCategory'),
+    /**
+    * @todo: Create pull request til alma module.
+    */
+    $user_data = alma_client_invoke('get_patron_info', $creds['user_id'], $creds['password'], TRUE);
+  }
 
-    if ($creds != DING_PROVIDER_AUTH_REQUIRED) {
-       // This need a update to AlmaClient.class.php with this line 'category' =>  $info->getAttribute('patronCategory'), )
-       $userdata = alma_client_invoke('get_patron_info', $creds['user_id'], $creds['password'], TRUE);
-    }
+  // If no data? - then return null,
+  if (!isset( $user_data["category"])) {
+    return FALSE;
+  }
 
-    // if no data? - then return null
-    if ( !isset( $userdata["category"]) ) {
-      return null;
-    }
-
-    // have the user some blocks then vi return null if this 
-    if ( isset($userdata["blocks"]) && ! empty($block) ) {
-      $blocklist = explode(',', $block); 
-      $regexp = '/(' . implode ( '|', preg_grep('/^\w+$/', $blocklist) ) . ')/';
-      foreach ( $userdata["blocks"] as $ele ) {
-         if ( ! $ele['is_system'] && preg_match ( $regexp , $ele['code'] ) ) {
-            return null;
-         }
+  // Have the user some blocks then vi return FALSE if this... ?
+  if ( isset($user_data["blocks"]) && ! empty($block) ) {
+    $block_list = explode(',', $block);
+    $regexp = '/(' . implode('|', preg_grep('/^\w+$/', $block_list)) . ')/';
+    foreach ($user_data["blocks"] as $ele) {
+      if (!$ele['is_system'] && preg_match($regexp , $ele['code'])) {
+        return FALSE;
       }
     }
+  }
 
-    // make the regexp with allowed categories and check this
-    $catlist = explode(',', $category);
-    $regexp = '/(' . implode ( '|', preg_grep('/^\w+$/', $catlist) ) . ')/';
+  // Make the regexp with allowed categories and check this.
+  $catlist = explode(',', $category);
+  $regexp = '/(' . implode('|', preg_grep('/^\w+$/', $catlist)) . ')/';
 
-    return preg_match ( $regexp , $userdata["category"] );
-
+  return preg_match ($regexp , $user_data["category"]);
 }
-/**
- * From http://www.oclc.org/support/documentation/ezproxy/usr/ticket/php.htm
- *
- */
 
+
+/**
+ * @todo: Missing description.
+ *
+ * @todo: Move class into own file and let autoloader load the class when
+ * needed.
+ *
+ * From http://www.oclc.org/support/documentation/ezproxy/usr/ticket/php.htm
+ */
 class EZproxyTicket {
   var $EZproxyStartingPointURL;
 
-  function EZproxyTicket(
-    $EZproxyServerURL,
-    $secret,
-    $user,
-    $groups = "")
-  {
+  function EZproxyTicket($EZproxyServerURL, $secret, $user, $groups = "") {
     if (strcmp($secret, "") == 0) {
       echo("EZproxyURLInit secret cannot be blank");
       exit(1);
+      /**
+       * @todo: Use drupal_set_message and return FASLE and handle the error.
+       *        this may give a WSOD. Never use exit, somebody might try to
+       *        create the class and call the function.
+       */
     }
 
     $packet = '$u' . time();
@@ -142,8 +171,7 @@ class EZproxyTicket {
       urlencode($user) . "&ticket=" . $EZproxyTicket;
   }
 
-  function url($url)
-  {
+  function url($url) {
     return $this->EZproxyStartingPointURL . "&url=" . $url;
   }
 }
