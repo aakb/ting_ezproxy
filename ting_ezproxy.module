@@ -40,11 +40,6 @@ function ting_ezproxy_menu(){
  * @todo: Missing description!.
  */
 function ting_ezproxy_handler() {
-
-  // Get url from ezproxy
-  // The content will be encoded in The Ezproxy-way eg. "ezp.2aH...s-"
-  $url = $_GET['url'];
-
   global $user;
 
   // Get config values.
@@ -65,6 +60,10 @@ function ting_ezproxy_handler() {
     else if ($status) {
       // all okay - construct ticket
 
+      // Get url from ezproxy
+      // The content will be encoded in The Ezproxy-way eg. "ezp.2aH...s-"
+      $url = $_GET['url'];
+  
       // We should use a non-critical id on the user to the ezproxylog
       // @todo: do a MD5 hash on uid with some random number and save the connection uid/ezproxy_userid in watchdog
       $ezproxy_userid = $user->uid;
@@ -146,42 +145,5 @@ function make_ezproxy_url($EZproxyServerURL, $secret, $user, $groups = "", $url)
     }
     $packet .= '$e';
     $EZproxyTicket = urlencode(md5($secret . $user . $packet) . $packet);
-    return $EZproxyServerURL . "/login?user=" . urlencode($user) . "&ticket=" . $EZproxyTicket . "&url=" . $url;
-}
-
-/**
- * @todo: Missing description.
- *
- * @todo: Move class into own file and let autoloader load the class when
- * needed.
- *
- * From http://www.oclc.org/support/documentation/ezproxy/usr/ticket/php.htm
- */
-class EZproxyTicket {
-  var $EZproxyStartingPointURL;
-
-  function EZproxyTicket($EZproxyServerURL, $secret, $user, $groups = "") {
-    if (strcmp($secret, "") == 0) {
-      echo("EZproxyURLInit secret cannot be blank");
-      exit(1);
-      /**
-       * @todo: Use drupal_set_message and return FASLE and handle the error.
-       *        this may give a WSOD. Never use exit, somebody might try to
-       *        create the class and call the function.
-       */
-    }
-
-    $packet = '$u' . time();
-    if (strcmp($groups, "") != 0) {
-      $packet .=  '$g' . $groups;
-    }
-    $packet .= '$e';
-    $EZproxyTicket = urlencode(md5($secret . $user . $packet) . $packet);
-    $this->EZproxyStartingPointURL = $EZproxyServerURL . "/login?user=" .
-      urlencode($user) . "&ticket=" . $EZproxyTicket;
-  }
-
-  function url($url) {
-    return $this->EZproxyStartingPointURL . "&url=" . $url;
-  }
+    return $EZproxyServerURL . "/login?user=" . urlencode($user) . "&ticket=" . $EZproxyTicket . "&qurl=" . urlencode($url);
 }
