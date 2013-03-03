@@ -10,6 +10,8 @@ Brugeren starter på ting-sitet hvor der er link til databasen - enten til selve 
 Disse link går via Ezproxy, som før linket kan proxies, kræver at brugeren er authenticeret og denne opgave overdrages til nærværende modul.
 Brugeren logger ind, det valideres om man er bosat i kommunen og kontrollen gives endeligt tilbage til Ezproxy.
 
+Dette sker kun første gang (pr session) - de efterfølgende link fra ting-sitet bliver proxiet med det samme.
+
 Valideringen sker på basis af lånerkategorier og evt. blokeringskoder der afleveres af Alma.
 Modulet kræver [patch til AlmaClient.class.php](https://github.com/bombycilla/alma/commit/83d96e26f8795d0ad676d08179a180263d6fc4fe) så lånerkategorier kan håndteres.
 
@@ -45,4 +47,3 @@ En SECRET af passende længde vælges med omhu og indtastes i administrationen.
 
 Lokalt på ezproxy-serveren findes en default udgave af expired.htm som kan tilrettes hvis ønskeligt.
 Urlen fra 2) har en tidsbegrænsning bestemt af TimeValid (her 10 minutter).
-
