@@ -29,7 +29,7 @@ function ting_ezproxy_menu(){
   );
 
   $items[EZPROXY_AUTHENTICATION_URL] = array(
-    'title' => 'Ezproxy callback',
+    'title' => 'Ezproxy authentication',
     'description' => 'EZProxy menu callback to handle authentication',
     'page callback' => 'ting_ezproxy_handler',
     'access callback' => TRUE,
@@ -92,7 +92,7 @@ function ting_ezproxy_handler() {
       $text = $config_values['text_wrongcategory'];
     }
   }
-  return $text;
+  return '<div class="ting-ezproxy">' . $text . '</div>';
 }
 
 /**
