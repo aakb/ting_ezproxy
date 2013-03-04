@@ -119,7 +119,7 @@ function get_user_current_status($category, $block) {
   // Have the user some blocks then vi return FALSE if this... ?
   if ( isset($user_data["blocks"]) && strlen($block) ) {
     $block_list = explode(',', $block);
-    $regexp = '/(' . implode('|', preg_grep('/^\w+$/', $block_list)) . ')/';
+    $regexp = '/^(' . implode('|', preg_grep('/^\w+$/', $block_list)) . ')$/';
     foreach ($user_data["blocks"] as $ele) {
       if (!$ele['is_system'] && preg_match($regexp , $ele['code'])) {
         return FALSE;
@@ -129,7 +129,7 @@ function get_user_current_status($category, $block) {
 
   // Make the regexp with allowed categories and check this.
   $catlist = explode(',', $category);
-  $regexp = '/(' . implode('|', preg_grep('/^\w+$/', $catlist)) . ')/';
+  $regexp = '/^(' . implode('|', preg_grep('/^\w+$/', $catlist)) . ')$/';
 
   return preg_match ($regexp , $user_data["category"]);
 }
