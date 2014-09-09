@@ -1,7 +1,6 @@
-;$Id: ting_ezproxy.info,v 1.3.2.1 2010/07/11 01:46:53 ferdi Exp $
 name = Ting Ezproxy
-description = Ezproxy authentication
-package = "ITK"
-core = 6.x
-
-
+description = EZproxy authentication
+package = Ding!
+core = 7.x
+dependencies[] = ting
+version = "7.x-0.1"
