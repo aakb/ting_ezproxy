@@ -3,4 +3,3 @@ description = EZproxy authentication
 package = Ding!
 core = 7.x
 dependencies[] = ting
-version = "7.x-0.1"

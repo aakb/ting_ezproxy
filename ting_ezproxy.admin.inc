@@ -1,19 +1,17 @@
 <?php
 /**
  * @file
- *
  * @todo: Missing description.
  */
 
 
 /**
- * Settings form for global ting_ezproxy custimazation.
- *
+ * Settings form for global ting_ezproxy customization.
  */
-function ting_ezproxy_settings_form(){
+function ting_ezproxy_settings_form() {
 
   $form = array(
-    '#tree' => TRUE
+    '#tree' => TRUE,
   );
 
   $default = variable_get('ting_ezproxy', array());
@@ -62,7 +60,7 @@ function ting_ezproxy_settings_form(){
   $form['ting_ezproxy']['text_anonymous'] = array(
     '#type' => 'textarea',
     '#title' => t('Text for anonymous users'),
-    '#default_value' =>  isset($default['text_anonymous']) ? $default['text_anonymous'] : '',
+    '#default_value' => isset($default['text_anonymous']) ? $default['text_anonymous'] : '',
     '#cols' => 60,
     '#rows' => 5,
     '#description' => t('This are shown with loginform - use @loginform for that'),
@@ -71,7 +69,7 @@ function ting_ezproxy_settings_form(){
   $form['ting_ezproxy']['text_loggedin'] = array(
     '#type' => 'textarea',
     '#title' => t('Text for logged in users'),
-    '#default_value' =>  isset($default['text_loggedin']) ? $default['text_loggedin'] : '',
+    '#default_value' => isset($default['text_loggedin']) ? $default['text_loggedin'] : '',
     '#cols' => 60,
     '#rows' => 5,
     '#description' => t('This are the last text shown with tokenurl - use @tokenurl for that'),
@@ -87,7 +85,7 @@ function ting_ezproxy_settings_form(){
   $form['ting_ezproxy']['text_wrongcategory'] = array(
     '#type' => 'textarea',
     '#title' => t('Text for users in wrong category'),
-    '#default_value' =>  isset($default['text_wrongcategory']) ? $default['text_wrongcategory'] : '',
+    '#default_value' => isset($default['text_wrongcategory']) ? $default['text_wrongcategory'] : '',
     '#cols' => 60,
     '#rows' => 5,
     '#description' => t('This text will show for logged in users with wrong category'),
@@ -96,7 +94,7 @@ function ting_ezproxy_settings_form(){
   $form['ting_ezproxy']['text_error'] = array(
     '#type' => 'textarea',
     '#title' => t('Text for error of some kind'),
-    '#default_value' =>  isset($default['text_error']) ? $default['text_error'] : '',
+    '#default_value' => isset($default['text_error']) ? $default['text_error'] : '',
     '#cols' => 60,
     '#rows' => 5,
     '#description' => t('This text will show for users who are blocked or because of other error'),

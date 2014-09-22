@@ -8,12 +8,12 @@
  * with construct of a Ticket-url.
  */
 
-define('EZPROXY_AUTHENTICATION_URL', 'ezproxy_authentication');
+define('TING_EZPROXY_AUTHENTICATION_URL', 'ezproxy_authentication');
 
 /**
- * Implementation of hook_menu
+ * Implements hook_menu().
  */
-function ting_ezproxy_menu(){
+function ting_ezproxy_menu() {
   $items = array();
 
   $items['admin/settings/ting/ezproxy'] = array(
@@ -21,14 +21,13 @@ function ting_ezproxy_menu(){
     'description' => 'Configure EZProxy authenticaton',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ting_ezproxy_settings_form'),
-    'file' => 'ting_ezproxy.admin.inc',
     'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
-    'type' => MENU_NORMAL_ITEM,
+    'file' => 'ting_ezproxy.admin.inc',
     'weight' => 10,
   );
 
-  $items[EZPROXY_AUTHENTICATION_URL] = array(
+  $items[TING_EZPROXY_AUTHENTICATION_URL] = array(
     'title' => 'Ezproxy authentication',
     'description' => 'EZProxy menu callback to handle authentication',
     'page callback' => 'ting_ezproxy_handler',
@@ -40,7 +39,7 @@ function ting_ezproxy_menu(){
 }
 
 /**
- * Handle the authentication of the user
+ * Menu callback that handles authentication of the current logged in users.
  */
 function ting_ezproxy_handler() {
   global $user;
@@ -49,7 +48,7 @@ function ting_ezproxy_handler() {
   $config_values = variable_get('ting_ezproxy', array());
 
   if (user_is_anonymous()) {
-    // Get text and replace token
+    // Get text and replace token.
     $text = strtr($config_values['text_anonymous'], array('@loginform' => drupal_get_form('user_login')));
   }
   else {
@@ -57,38 +56,40 @@ function ting_ezproxy_handler() {
     $status = get_user_current_status($config_values['category'], $config_values['block']);
 
     if ($status) {
-      // all okay - construct ticket
+      // All okay - construct ticket.
 
       // Get url from ezproxy
-      // The content will be encoded in The Ezproxy-way eg. "ezp.2aH...s-" - it's not a real url in this context.
+      // The content will be encoded in The Ezproxy-way eg. "ezp.2aH...s-" -
+      // it's not a real url in this context.
       $url = $_GET['url'];
 
       // We should use a non-critical id on the user to the ezproxylog
-      // @todo: do a MD5 hash on uid with some random number and save the connection uid/ezproxy_userid in watchdog
+      // @TODO: do a MD5 hash on uid with some random number and save the
+      // connection uid/ezproxy_userid in watchdog.
       $ezproxy_userid = $user->uid;
 
-      // Make the ezproxy url with ticket
+      // Make the ezproxy url with ticket.
       $url_redirect  = make_ezproxy_url($config_values['domain'], $config_values['secret'], $ezproxy_userid, $config_values['citizen'], $url);
 
       $waittime = intval($config_values['loggedin_time']);
-      if (  $waittime == 0 ) {
+      if ($waittime == 0) {
         drupal_goto($url_redirect);
       }
       else {
-        // Get text and replace token with url
-        $text = strtr( $config_values['text_loggedin'], array('@tokenurl' => $url_redirect ));
+        // Get text and replace token with url.
+        $text = strtr($config_values['text_loggedin'], array('@tokenurl' => $url_redirect));
 
-        if ( $waittime > 0 ) {
-          drupal_set_html_head('<meta http-equiv="refresh" content="'. $waittime . ';url=' . $url_redirect . '">');
+        if ($waittime > 0) {
+          drupal_set_html_head('<meta http-equiv="refresh" content="' . $waittime . ';url=' . $url_redirect . '">');
         }
       }
     }
-    else if ($status === FALSE) {
+    elseif ($status === FALSE) {
       // Blocked or other error.
       $text = $config_values['text_error'];
     }
     else {
-      // Wrong category
+      // Wrong category.
       $text = $config_values['text_wrongcategory'];
     }
   }
@@ -96,12 +97,13 @@ function ting_ezproxy_handler() {
 }
 
 /**
- * Get the state of the user
+ * Get the state of the user.
  *
- * @return
+ * @return mixed
  *   1: user have the correct category
  *   0: user have a wrong category
- *   FALSE: some other error eg. blocked card, no connection to ding_provider, user is not alma_user
+ *   FALSE: some other error eg. blocked card, no connection to ding_provider,
+ *          user is not alma_user
  */
 function get_user_current_status($category, $block) {
   global $user;
@@ -112,16 +114,16 @@ function get_user_current_status($category, $block) {
   }
 
   // If no data? - then return FALSE,
-  if (!isset( $user_data["category"])) {
+  if (!isset($user_data["category"])) {
     return FALSE;
   }
 
   // Have the user some blocks then vi return FALSE if this... ?
-  if ( isset($user_data["blocks"]) && strlen($block) ) {
+  if (isset($user_data["blocks"]) && strlen($block)) {
     $block_list = explode(',', $block);
     $regexp = '/^(' . implode('|', preg_grep('/^\w+$/', $block_list)) . ')$/';
     foreach ($user_data["blocks"] as $ele) {
-      if (!$ele['is_system'] && preg_match($regexp , $ele['code'])) {
+      if (!$ele['is_system'] && preg_match($regexp, $ele['code'])) {
         return FALSE;
       }
     }
@@ -131,21 +133,22 @@ function get_user_current_status($category, $block) {
   $catlist = explode(',', $category);
   $regexp = '/^(' . implode('|', preg_grep('/^\w+$/', $catlist)) . ')$/';
 
-  return preg_match ($regexp , $user_data["category"]);
+  return preg_match($regexp , $user_data["category"]);
 }
 
 /**
- * Make the Ezproxy-ticket
+ * Make the Ezproxy-ticket.
  *
  * From the documentation for Ezproxy
  * http://www.oclc.org/support/documentation/ezproxy/usr/ticket/php.htm
  */
-function make_ezproxy_url($EZproxyServerURL, $secret, $user, $groups = "", $url) {
+function make_ezproxy_url($ez_proxy_server_url, $secret, $user, $groups = "", $url = "") {
   $packet = '$u' . time();
   if (strcmp($groups, "") != 0) {
-    $packet .=  '$g' . $groups;
+    $packet .= '$g' . $groups;
   }
   $packet .= '$e';
-  $EZproxyTicket = urlencode(md5($secret . $user . $packet) . $packet);
-  return $EZproxyServerURL . "/login?user=" . urlencode($user) . "&ticket=" . $EZproxyTicket . "&qurl=" . urlencode($url);
+  $ez_proxy_ticket = urlencode(md5($secret . $user . $packet) . $packet);
+
+  return $ez_proxy_server_url . "/login?user=" . urlencode($user) . "&ticket=" . $ez_proxy_ticket . "&qurl=" . urlencode($url);
 }
