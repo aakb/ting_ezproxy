@@ -48,7 +48,8 @@ function ting_ezproxy_handler() {
 
   if (user_is_anonymous()) {
     // Get text and replace token.
-    $text = strtr($configuration['text_anonymous'], array('@loginform' => drupal_get_form('user_login')));
+    $form = drupal_get_form('user_login');
+    $text = strtr($configuration['text_anonymous'], array('@loginform' => render($form)));
   }
   else {
     // User is logged in.
