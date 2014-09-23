@@ -7,6 +7,8 @@
  * with construct of a Ticket-url.
  */
 
+include_once 'ting_ezproxy2.features.inc';
+
 define('TING_EZPROXY_AUTHENTICATION_URL', 'ting_ezproxy_authentication');
 
 /**
@@ -93,6 +95,7 @@ function ting_ezproxy_handler() {
       $text = $configuration['text_wrongcategory'];
     }
   }
+
   return '<div class="ting-ezproxy">' . $text . '</div>';
 }
 
@@ -118,15 +121,8 @@ function ting_ezproxy_handler() {
  * @throws Exception
  */
 function ting_ezproxy_user_status($category, $block) {
-  global $user;
-
   // Try to get user credentials.
-  try {
-    $user_data = ding_user_get_creds($user);
-  }
-  catch (Exception $exception) {
-    return FALSE;
-  }
+  $user_data = isset($_SESSION['ding_user']['user']) ? $_SESSION['ding_user']['user'] : array();
 
   // Default status to FALSE.
   $status = FALSE;
