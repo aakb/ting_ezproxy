@@ -43,14 +43,14 @@ function ting_ezproxy_menu() {
  * Menu callback that handles authentication of the current logged in users.
  */
 function ting_ezproxy_handler() {
-  global $user;
-
   // Get config values.
   $configuration = variable_get('ting_ezproxy', array());
 
   if (user_is_anonymous()) {
+    // Get the user login form.
+    $form = drupal_get_form('ting_ezproxy_user_login_form');
+
     // Get text and replace token.
-    $form = drupal_get_form('user_login');
     $text = strtr($configuration['text_anonymous'], array('@loginform' => render($form)));
   }
   else {
@@ -64,7 +64,7 @@ function ting_ezproxy_handler() {
       $url = $_GET['url'];
 
       // Make the EZproxy url with ticket using a non-critical id (uid).
-      $url_redirect  = ting_ezproxy_generate_ticket($user->uid, $url);
+      $url_redirect  = ting_ezproxy_generate_ticket($url);
 
       $waittime = intval($configuration['loggedin_time']);
       if ($waittime == 0) {
@@ -75,7 +75,6 @@ function ting_ezproxy_handler() {
         $text = strtr($configuration['text_loggedin'], array('@tokenurl' => $url_redirect));
 
         if ($waittime > 0) {
-
           drupal_add_html_head(array(
             '#tag' => 'meta',
             '#attributes' => array(
@@ -100,17 +99,49 @@ function ting_ezproxy_handler() {
 }
 
 /**
- * Get the state of the user.
+ * Implements hook_form().
  *
- * @return mixed
-
+ * Wrapper for the user login form to get around default redirect to the users
+ * profile page.
  */
+function ting_ezproxy_user_login_form() {
+  $form_id = 'user_login';
+
+  // Build basic form_state or drupal_retrieve_form() will only return the
+  // form_id and not the form elements.
+  $form_state = array();
+  $form_state += form_state_defaults();
+
+  // Get user login form.
+  $form = drupal_retrieve_form($form_id, $form_state);
+
+  $form['#submit'] = array('ting_ezproxy_user_login_submit');
+
+  // Run hook_form_alter() and hook_form_FORM_ID_alter() functions to give other
+  // modules a change to update the form.
+  $hooks = array('form');
+  $hooks[] = 'form_' . $form_id;
+  drupal_alter($hooks, $form, $form_state, $form_id);
+
+  return $form;
+}
+
+/**
+ * Submit handler for the form wrapper above to get around redirects.
+ */
+function ting_ezproxy_user_login_submit($form, &$form_state) {
+  global $user;
+  $user = user_load($form_state['uid']);
+  user_login_finalize($form_state);
+}
 
 /**
  * Get the current logged in users stats.
  *
- * @param $category
- * @param $block
+ * @param string $category
+ *   The library systems user category for the current logged in user.
+ * @param string $block
+ *   Library blocking codes.
  *
  * @return bool|int
  *   1: user have the correct category
@@ -153,14 +184,17 @@ function ting_ezproxy_user_status($category, $block) {
 /**
  * Generate an EZproxy ticket.
  *
- * @param $user
  * @param string $url
+ *   The url to generate ticket for.
  *
  * @see http://www.oclc.org/support/documentation/ezproxy/usr/ticket/php.htm
  *
  * @return string
+ *   URL encoded with the ticket.
  */
-function ting_ezproxy_generate_ticket($user, $url) {
+function ting_ezproxy_generate_ticket($url) {
+  global $user;
+
   // Get config values.
   $configuration = variable_get('ting_ezproxy', array());
 
@@ -169,7 +203,7 @@ function ting_ezproxy_generate_ticket($user, $url) {
     $packet .= '$g' . $configuration['citizen'];
   }
   $packet .= '$e';
-  $ez_proxy_ticket = urlencode(md5($configuration['secret'] . $user . $packet) . $packet);
+  $ez_proxy_ticket = urlencode(md5($configuration['secret'] . $user->uid . $packet) . $packet);
 
-  return $configuration['domain'] . "/login?user=" . urlencode($user) . "&ticket=" . $ez_proxy_ticket . "&qurl=" . urlencode($url);
+  return $configuration['domain'] . "/login?user=" . urlencode($user->uid) . "&ticket=" . $ez_proxy_ticket . "&qurl=" . urlencode($url);
 }
