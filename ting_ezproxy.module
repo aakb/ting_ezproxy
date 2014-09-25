@@ -45,6 +45,10 @@ function ting_ezproxy_menu() {
 function ting_ezproxy_handler() {
   // Get config values.
   $configuration = variable_get('ting_ezproxy', array());
+  if (empty($configuration)) {
+    drupal_set_message(t('The EZproxy module have not been configured. Please contact the site administrator.'), 'warning');
+    return FALSE;
+  }
 
   if (user_is_anonymous()) {
     // Get the user login form.
