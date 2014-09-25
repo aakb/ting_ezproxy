@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * ting_ezproxy2.pages_default.inc
+ * ting_ezproxy.pages_default.inc
  */
 
 /**
  * Implements hook_default_page_manager_handlers().
  */
-function ting_ezproxy2_default_page_manager_handlers() {
+function ting_ezproxy_default_page_manager_handlers() {
   $export = array();
 
   $handler = new stdClass();

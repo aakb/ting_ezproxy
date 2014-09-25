@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * ting_ezproxy2.pm_existing_pages.inc
+ * ting_ezproxy.pm_existing_pages.inc
  */
 
 /**
  * Implements hook_pm_existing_pages_info().
  */
-function ting_ezproxy2_pm_existing_pages_info() {
+function ting_ezproxy_pm_existing_pages_info() {
   $export = array();
 
   $pm_existing_page = new stdClass();
