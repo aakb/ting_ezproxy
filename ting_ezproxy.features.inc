@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * ting_ezproxy2.features.inc
+ * ting_ezproxy.features.inc
  */
 
 /**
  * Implements hook_ctools_plugin_api().
  */
-function ting_ezproxy2_ctools_plugin_api($module = NULL, $api = NULL) {
+function ting_ezproxy_ctools_plugin_api($module = NULL, $api = NULL) {
   if ($module == "page_manager" && $api == "pages_default") {
     return array("version" => "1");
   }
